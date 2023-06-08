@@ -6,11 +6,11 @@
 #include <conio.h>
 #include <Windows.h>
 #include <time.h>
+#include <stdlib.h.>
 
 using namespace std;
 
 HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-
 bool mapRenderDone = false;
 
 class Move {
@@ -19,6 +19,7 @@ protected:
 	size_t loadMap();
 	COORD cursorPosition;
 private:
+
 	char icon;
 	string mapName;
 	int directX;
@@ -29,6 +30,7 @@ private:
 	void updateMap(short x, short y);
 	virtual bool checkCollision(short x, short y) = 0;
 public:
+
 	Move(char c, string mapName_) : icon(c), mapName(mapName_)
 	{
 		loadMap();
@@ -97,8 +99,29 @@ bool Move::checkCollision(short x, short y) {
 }
 
 void Move::renderMap() {
+	CONSOLE_SCREEN_BUFFER_INFO consoleInfo;
+	GetConsoleScreenBufferInfo(hConsole, &consoleInfo);
+	WORD savedAttributes = consoleInfo.wAttributes;
+
 	for (size_t i = 0; i < map.size(); i++) {
-		cout << map[i] << endl;
+		string line = map[i];
+		for (size_t j = 0; j < line.size(); j++) {
+			switch (line[j])
+			{
+			case char(219) :
+				SetConsoleTextAttribute(hConsole, FOREGROUND_RED);
+				cout << line[j];
+			    break;
+			case '.':
+				SetConsoleTextAttribute(hConsole, FOREGROUND_BLUE);
+				cout << line[j];
+				break;
+			default:
+				cout << line[j];
+			}
+			SetConsoleTextAttribute(hConsole, savedAttributes);
+		}
+		cout << endl;
 	}
 }
 
@@ -162,7 +185,6 @@ public:
 	bool checkWin();
 	void checkPoint();
 private:
-	
 	bool checkCollision(short x, short y) override {
 		return map[y][x] == char(219);
 	}
@@ -186,10 +208,7 @@ class Enemy : public Move {
 private:
 	size_t hack_python_count = 0;
 public:
-	Enemy() : Move('$', "map.txt") {
-		setDX(rand() % 3 - 1);
-		setDY(rand() % 3 - 1);
-	}
+	Enemy() : Move('$', "map.txt") { }
 
 private:
 	bool checkCollision(short x, short y) override {
@@ -202,6 +221,12 @@ private:
 };
 
 int main(int argc, char* argv[]) {
+	SetConsoleTitle(L"Genshim Pacman");
+	CONSOLE_CURSOR_INFO cursorInfo;
+	GetConsoleCursorInfo(hConsole, &cursorInfo);
+	cursorInfo.bVisible = false;
+	SetConsoleCursorInfo(hConsole, &cursorInfo);
+
 	Pacman pacman;
 	Enemy enemy;
 
